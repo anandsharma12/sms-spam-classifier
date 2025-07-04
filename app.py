@@ -1,5 +1,3 @@
-# app.py
-
 import streamlit as st 
 import streamlit.components.v1 as components
 import pickle
@@ -8,23 +6,49 @@ import re
 import time
 import requests
 import matplotlib.pyplot as plt
-from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
 
 ps = PorterStemmer()
 
+# ✅ Hardcoded stopwords to avoid nltk download
+custom_stopwords = set([
+    'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you',
+    "you're", "you've", "you'll", "you'd", 'your', 'yours', 'yourself',
+    'yourselves', 'he', 'him', 'his', 'himself', 'she', "she's", 'her',
+    'hers', 'herself', 'it', "it's", 'its', 'itself', 'they', 'them',
+    'their', 'theirs', 'themselves', 'what', 'which', 'who', 'whom',
+    'this', 'that', "that'll", 'these', 'those', 'am', 'is', 'are',
+    'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having',
+    'do', 'does', 'did', 'doing', 'a', 'an', 'the', 'and', 'but', 'if',
+    'or', 'because', 'as', 'until', 'while', 'of', 'at', 'by', 'for',
+    'with', 'about', 'against', 'between', 'into', 'through', 'during',
+    'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down',
+    'in', 'out', 'on', 'off', 'over', 'under', 'again', 'further',
+    'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how',
+    'all', 'any', 'both', 'each', 'few', 'more', 'most', 'other',
+    'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so',
+    'than', 'too', 'very', 's', 't', 'can', 'will', 'just', 'don',
+    "don't", 'should', "should've", 'now', 'd', 'll', 'm', 'o', 're',
+    've', 'y', 'ain', 'aren', "aren't", 'couldn', "couldn't", 'didn',
+    "didn't", 'doesn', "doesn't", 'hadn', "hadn't", 'hasn', "hasn't",
+    'haven', "haven't", 'isn', "isn't", 'ma', 'mightn', "mightn't",
+    'mustn', "mustn't", 'needn', "needn't", 'shan', "shan't", 'shouldn',
+    "shouldn't", 'wasn', "wasn't", 'weren', "weren't", 'won', "won't",
+    'wouldn', "wouldn't"
+])
+
 st.set_page_config(page_title="Spam Classifier", layout="wide")
 
-# Load model and vectorizer
+# Load vectorizer and model
 tfidf = pickle.load(open('vectorizer.pkl', 'rb'))
 model = pickle.load(open('model.pkl', 'rb'))
 
 def transform_text(text):
     text = text.lower()
-    words = re.findall(r'\b\w+\b', text)  # regex tokenizer
+    words = re.findall(r'\b\w+\b', text)
     y = []
     for word in words:
-        if word not in stopwords.words('english') and word not in string.punctuation:
+        if word not in custom_stopwords and word not in string.punctuation:
             y.append(ps.stem(word))
     return " ".join(y)
 
@@ -70,6 +94,7 @@ def save_classification_log():
         for msg in st.session_state.not_spam:
             f.write(f"NOT_SPAM: {msg}\n")
 
+# Initialize session state
 for key in ['spam', 'not_spam', 'dark_mode', 'auto_mode', 'api_index']:
     if key not in st.session_state:
         st.session_state[key] = [] if 'spam' in key else (False if 'mode' in key else 0)
@@ -77,6 +102,7 @@ for key in ['spam', 'not_spam', 'dark_mode', 'auto_mode', 'api_index']:
 if 'api_messages' not in st.session_state:
     st.session_state.api_messages = fetch_messages()
 
+# Theming
 dark_mode = st.session_state.dark_mode
 bg_color = "#1a1b1f" if dark_mode else "#ffffff"
 text_color = "#FFFFFF" if dark_mode else "#000000"
@@ -84,40 +110,41 @@ card_spam_bg = "#4d0000" if dark_mode else "#ffe6e6"
 card_not_spam_bg = "#003322" if dark_mode else "#e6fff2"
 section_bg = "#222" if dark_mode else "#ffffff"
 
-st.markdown(f"""
-    <style>
-        html, body, [data-testid="stApp"] {{
-            background-color: {bg_color};
-            color: {text_color};
-        }}
-        .gradient-button {{
-            padding: 10px 22px;
-            font-size: 14px;
-            font-weight: 600;
-            color: #000000;
-            background: white;
-            border: 3px solid;
-            border-image-slice: 1;
-            border-width: 3px;
-            border-image-source: linear-gradient(270deg, #ff6ec4, #7873f5, #4ADEDE, #ff6ec4);
-            border-radius: 8px;
-            animation: gradient-border 3s linear infinite;
-            cursor: pointer;
-            transition: transform 0.2s ease-in-out;
-        }}
-        .gradient-button:hover {{
-            transform: scale(1.05);
-        }}
-        @keyframes gradient-border {{
-            0% {{ border-image-source: linear-gradient(0deg, #ff6ec4, #7873f5, #4ADEDE, #ff6ec4); }}
-            50% {{ border-image-source: linear-gradient(180deg, #ff6ec4, #7873f5, #4ADEDE, #ff6ec4); }}
-            100% {{ border-image-source: linear-gradient(360deg, #ff6ec4, #7873f5, #4ADEDE, #ff6ec4); }}
-        }}
-    </style>
-""", unsafe_allow_html=True)
+# Page style
+st.markdown(f"""<style>
+html, body, [data-testid="stApp"] {{
+    background-color: {bg_color};
+    color: {text_color};
+}}
+.gradient-button {{
+    padding: 10px 22px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #000000;
+    background: white;
+    border: 3px solid;
+    border-image-slice: 1;
+    border-width: 3px;
+    border-image-source: linear-gradient(270deg, #ff6ec4, #7873f5, #4ADEDE, #ff6ec4);
+    border-radius: 8px;
+    animation: gradient-border 3s linear infinite;
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out;
+}}
+.gradient-button:hover {{
+    transform: scale(1.05);
+}}
+@keyframes gradient-border {{
+    0% {{ border-image-source: linear-gradient(0deg, #ff6ec4, #7873f5, #4ADEDE, #ff6ec4); }}
+    50% {{ border-image-source: linear-gradient(180deg, #ff6ec4, #7873f5, #4ADEDE, #ff6ec4); }}
+    100% {{ border-image-source: linear-gradient(360deg, #ff6ec4, #7873f5, #4ADEDE, #ff6ec4); }}
+}}
+</style>""", unsafe_allow_html=True)
 
+# Title
 st.markdown(f"<h1 style='color:{text_color};'>📧 Email/SMS Spam Classifier</h1>", unsafe_allow_html=True)
 
+# Sidebar
 with st.sidebar:
     st.markdown("## ⚙️ Settings")
     toggle_label = "🌙 Dark Mode" if not st.session_state.dark_mode else "☀️ Light Mode"
@@ -127,7 +154,6 @@ with st.sidebar:
         st.rerun()
 
     st.markdown("---")
-    st.markdown("### 📦 Message Stats")
     st.metric("🚫 Spam", len(st.session_state.spam))
     st.metric("✅ Not Spam", len(st.session_state.not_spam))
 
@@ -137,6 +163,7 @@ with st.sidebar:
     ax1.set_xticks([])
     st.pyplot(fig1)
 
+# Main area
 left_col, _ = st.columns([2, 1])
 with left_col:
     with st.form("auto_form", clear_on_submit=False):
@@ -219,14 +246,12 @@ with left_col:
             </div>
         """, unsafe_allow_html=True)
 
+# Logs
 st.markdown("<hr style='margin-top: 2rem;'>", unsafe_allow_html=True)
-
-st.markdown(f"""
-    <div style='border: 1px solid #888; border-radius: 10px; padding: 15px; 
-    background-color: {section_bg}; color: {text_color}; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);'>
-""", unsafe_allow_html=True)
-
+st.markdown(f"""<div style='border: 1px solid #888; border-radius: 10px; padding: 15px; 
+background-color: {section_bg}; color: {text_color}; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);'>""", unsafe_allow_html=True)
 st.markdown(f"### 📂 Message Log", unsafe_allow_html=True)
+
 spam_col, not_spam_col = st.columns(2)
 
 with spam_col:

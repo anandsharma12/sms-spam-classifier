@@ -1,6 +1,6 @@
-streamlit
-scikit-learn
-matplotlib
-nltk
-pandas
-requests
+streamlit>=1.28.0
+scikit-learn>=1.2.2
+matplotlib>=3.5.0
+nltk>=3.8.1
+pandas>=1.5.3
+requests>=2.31.0
